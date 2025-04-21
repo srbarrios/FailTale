@@ -1,0 +1,53 @@
+# Configuration template for the MCP Server
+# Copy this file to config.yaml and edit it.
+# DO NOT commit config.yaml if it contains secrets!
+
+# Global SSH configuration (can be overridden per host if necessary)
+ssh_defaults:
+  username: "your_limited_ssh_user"  # User with minimal permissions on target hosts
+  private_key_path: "~/.ssh/id_rsa"  # Path to your SSH private key
+  port: 22
+  connection_timeout: 10 # Seconds
+  command_timeout: 30    # Seconds
+
+# Definition of what data to collect per component role
+components:
+  server:
+    useful_data:
+      - description: "Last 100 lines of the server's main log"
+        command: "tail -n 100 /var/log/myapp/server.log"
+      - description: "Status of the main service"
+        command: "systemctl status myapp.service || echo 'systemctl not available'" # Add fallback
+      - description: "Processes related to myapp"
+        command: "ps aux | grep '[m]yapp' || echo 'grep found no processes'"
+      - description: "Listening ports (TCP)"
+        command: "ss -tlpn | grep LISTEN || netstat -tlpn | grep LISTEN || echo 'ss/netstat command not available'"
+  minion:
+    useful_data:
+      - description: "Last 50 lines of the minion log"
+        command: "tail -n 50 /var/log/myapp/minion.log"
+      - description: "Disk usage (root partition)"
+        command: "df -h /"
+  proxy:
+     useful_data:
+       - description: "Last 50 lines of the proxy log (nginx example)"
+         command: "tail -n 50 /var/log/nginx/access.log"
+       - description: "Recent proxy errors (nginx example)"
+         command: "tail -n 50 /var/log/nginx/error.log"
+
+# (Optional) Definition of specific hosts if not passed dynamically
+# hosts:
+#   server1:
+#     hostname: "server1.example.com"
+#     role: "server"
+#     # Override defaults if necessary:
+#     # ssh_username: "another_user"
+#   minion10:
+#     hostname: "192.168.1.110"
+#     role: "minion"
+
+# Ollama configuration
+ollama:
+  base_url: "http://localhost:11434" # Base URL of your Ollama instance
+  model: "llama3"                    # Default model to use for analysis
+  request_timeout: 60               # Timeout for requests to Ollama

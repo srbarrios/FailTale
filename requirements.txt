@@ -1,0 +1,19 @@
+# Core dependencies
+paramiko       # For SSH connections
+PyYAML         # For parsing config.yaml
+requests       # For calling Ollama API (if using REST) or MCP client
+ollama         # Official Ollama client library (alternative for interaction)
+asyncssh       # For async SSH connections
+asyncio        # For async programming
+
+# Web server framework (Choose one, e.g., Flask or FastAPI)
+Flask          # Example lightweight framework for the server
+# fastapi      # Alternative modern framework
+# uvicorn      # ASGI server needed for FastAPI
+
+# Testing
+pytest
+pytest-cov     # For coverage reports
+# responses    # Useful for mocking HTTP requests (Ollama API, MCP client tests)
+
+# Add other dependencies as needed
