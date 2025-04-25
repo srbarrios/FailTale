@@ -2,9 +2,8 @@ import pytest
 from unittest.mock import MagicMock, call
 
 # Import the base class and specific collectors
-from mcp_server_poc.collectors.base_collector import BaseCollector
-from mcp_server_poc.collectors.server_collector import ServerCollector
-# from mcp_server_poc.collectors.minion_collector import MinionCollector # etc.
+from mcp_server.collectors.base_collector import BaseCollector
+from mcp_server.collectors.uyuni.server_collector import ServerCollector
 
 # --- Test Setup ---
 
@@ -12,7 +11,7 @@ from mcp_server_poc.collectors.server_collector import ServerCollector
 @pytest.fixture
 def mock_ssh_executor():
     """Fixture to provide a mock SSH executor function."""
-    # This mock will simulate the behavior of execute_remote_command
+    # This mock will simulate the behavior of execute_remote_command_async
     # You can configure its return values per test case
     return MagicMock()
 

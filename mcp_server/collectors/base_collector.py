@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import logging
 # Import the function signature for type hinting if desired, or the function itself
-# from ..ssh_executor import execute_remote_command
+# from ..ssh_executor import execute_remote_command_async
 
 class BaseCollector(ABC):
     """Abstract Base Class for data collectors for different host roles."""

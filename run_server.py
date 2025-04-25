@@ -7,7 +7,6 @@ if __name__ == "__main__":
     parser.add_argument("--config", required=True, help="Path to the configuration file.")
     args = parser.parse_args()
 
-    print("Starting MCP server...")
     load_environments(args.config)
 
     # In production, use a WSGI server like Gunicorn or uWSGI instead of the development server.

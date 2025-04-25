@@ -3,7 +3,7 @@ from unittest.mock import patch, MagicMock
 import requests # Import requests to mock its methods
 
 # Import the function to test
-from mcp_server_poc.llm_interaction import get_ai_hint
+from mcp_server.llm_interaction import get_root_cause_hint
 
 # --- Test Setup ---
 
@@ -11,7 +11,7 @@ from mcp_server_poc.llm_interaction import get_ai_hint
 def ollama_config():
     """Fixture providing default Ollama config for tests."""
     return {
-        "base_url": "http://mock-ollama:11434",
+        "base_url": "http://localhost:11434",
         "model": "test-model",
         "request_timeout": 5,
     }
@@ -19,10 +19,10 @@ def ollama_config():
 # --- Test Cases ---
 
 @patch('requests.post') # Mock the requests.post call
-def test_get_ai_hint_success(mock_post, ollama_config):
+def test_get_root_cause_hint_success(mock_post, ollama_config):
     """Test successful interaction with Ollama API."""
     context_str = "Host: server1\nLog: Error line\n"
-    failure_summary = "Test timed out"
+    test_report = "Test timed out"
 
     # Configure the mock response from requests.post
     mock_response = MagicMock()
@@ -40,7 +40,7 @@ def test_get_ai_hint_success(mock_post, ollama_config):
     # Make requests.post return our mock response
     mock_post.return_value = mock_response
 
-    hint = get_ai_hint(context_str, failure_summary, ollama_config)
+    hint = get_root_cause_hint(context_str, test_report, ollama_config)
 
     # Assertions
     assert hint == "Based on the log, check the 'Error line'." # Check that strip() worked
@@ -58,47 +58,47 @@ def test_get_ai_hint_success(mock_post, ollama_config):
     assert payload['stream'] is False
     assert len(payload['messages']) == 1
     assert payload['messages'][0]['role'] == 'user'
-    assert failure_summary in payload['messages'][0]['content']
+    assert test_report in payload['messages'][0]['content']
     assert context_str in payload['messages'][0]['content']
 
 @patch('requests.post')
-def test_get_ai_hint_request_exception(mock_post, ollama_config):
+def test_get_root_cause_hint_request_exception(mock_post, ollama_config):
     """Test handling of network errors when calling Ollama."""
     context_str = "Some context"
-    failure_summary = "Some failure"
+    test_report = "Some failure"
 
     # Configure requests.post to raise a connection error
     error_message = "Connection refused"
     mock_post.side_effect = requests.exceptions.RequestException(error_message)
 
-    hint = get_ai_hint(context_str, failure_summary, ollama_config)
+    hint = get_root_cause_hint(context_str, test_report, ollama_config)
 
     # Assertions
-    assert "Error de conexión con Ollama" in hint
+    assert "Connection error with Ollama: Connection refused" in hint
     assert error_message in hint
     mock_post.assert_called_once()
 
 @patch('requests.post')
-def test_get_ai_hint_timeout(mock_post, ollama_config):
+def test_get_root_cause_hint_timeout(mock_post, ollama_config):
     """Test handling of timeouts when calling Ollama."""
     context_str = "Some context"
-    failure_summary = "Some failure"
+    test_report = "Some failure"
 
     # Configure requests.post to raise a timeout error
     mock_post.side_effect = requests.exceptions.Timeout("Request timed out")
 
-    hint = get_ai_hint(context_str, failure_summary, ollama_config)
+    hint = get_root_cause_hint(context_str, test_report, ollama_config)
 
     # Assertions
-    assert "Timeout al contactar con Ollama" in hint
-    assert f"(límite: {ollama_config['request_timeout']}s)" in hint
+    assert "Timeout while contacting Ollama" in hint
+    assert f"(limit: {ollama_config['request_timeout']}s)" in hint
     mock_post.assert_called_once()
 
 @patch('requests.post')
-def test_get_ai_hint_http_error(mock_post, ollama_config):
+def test_get_root_cause_hint_http_error(mock_post, ollama_config):
     """Test handling of HTTP error responses from Ollama (e.g., 4xx, 5xx)."""
     context_str = "Some context"
-    failure_summary = "Some failure"
+    test_report = "Some failure"
 
     # Configure mock response with an error status code
     mock_response = MagicMock()
@@ -110,23 +110,23 @@ def test_get_ai_hint_http_error(mock_post, ollama_config):
     )
     mock_post.return_value = mock_response
 
-    hint = get_ai_hint(context_str, failure_summary, ollama_config)
+    hint = get_root_cause_hint(context_str, test_report, ollama_config)
 
     # Assertions
     # The RequestException handler should catch this
-    assert "Error de conexión con Ollama" in hint
+    assert "Internal Server Error for url" in hint
     assert "500 Server Error" in hint # Check that the HTTPError message is included
     mock_post.assert_called_once()
 
-def test_get_ai_hint_missing_config(ollama_config):
+def test_get_root_cause_hint_missing_config(ollama_config):
     """Test behavior when Ollama config is missing or incomplete."""
     context_str = "Some context"
-    failure_summary = "Some failure"
+    test_report = "Some failure"
 
-    hint_none = get_ai_hint(context_str, failure_summary, None)
-    assert "Configuración de Ollama no disponible" in hint_none
+    hint_none = get_root_cause_hint(context_str, test_report, None)
+    assert "Error: Ollama configuration is not available." in hint_none
 
-    hint_no_url = get_ai_hint(context_str, failure_summary, {"model": "test"}) # Missing base_url
-    assert "Configuración de Ollama no disponible" in hint_no_url
+    hint_no_url = get_root_cause_hint(context_str, test_report, {"model": "test"}) # Missing base_url
+    assert "Error: Ollama configuration is not available." in hint_no_url
 
 # Add tests for different prompt variations if needed.

@@ -50,7 +50,7 @@ It optionally uses a local LLM (Ollama) to analyze the collected data and provid
     * Add your public key (`~/.ssh/id_rsa.pub`) to the `~/.ssh/authorized_keys` file of the limited user on each target host.
     * Verify connectivity manually: `ssh -i /path/to/private_key limited_user@target_host 'echo hello'`
 6.  **Create Configuration File:**
-    * Copy the template: `cp environments/config.yaml.template environments/myenv.yaml`
+    * Copy the template: `cp templates/config.yaml.template environments/myenv.yaml`
     * Edit `environments/myenv.yaml` with your host details, commands, SSH user, and private key path. **Do not commit this file if it contains sensitive information!**
 
 ## Usage
@@ -65,8 +65,8 @@ It optionally uses a local LLM (Ollama) to analyze the collected data and provid
 
 ## Development
 
-* **Add Collectors:** Implement specific logic in `mcp_server_poc/collectors/`.
-* **Define MCP Endpoints:** Develop endpoints in `mcp_server_poc/server.py` based on the **official MCP documentation**.
+* **Add Collectors:** Implement specific logic in `mcp_server/collectors/`.
+* **Define MCP Endpoints:** Develop endpoints in `mcp_server/server.py` based on the **official MCP documentation**.
 * **Write Tests:** Add unit and integration tests in the `tests/` directory. Use `pytest` to run them:
     ```bash
     pytest

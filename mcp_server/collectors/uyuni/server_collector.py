@@ -1,5 +1,5 @@
 import logging
-from .base_collector import BaseCollector
+from ..base_collector import BaseCollector
 
 class ServerCollector(BaseCollector):
     """Collector implementation for hosts with the 'server' role."""

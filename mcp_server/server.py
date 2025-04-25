@@ -1,9 +1,10 @@
+import asyncio
 import logging
 
 from flask import Flask, request, jsonify
 
 from .config_loader import load_config
-from .llm_interaction import get_ai_hint  # Make sure this is implemented
+from .llm_interaction import get_root_cause_hint  # Make sure this is implemented
 from .ssh_executor import execute_remote_command_async  # Make sure this is implemented
 
 # from .mcp_protocols import McpRequest, McpResponse # (Placeholder) Import MCP classes/models
@@ -19,7 +20,6 @@ def load_environments(config_path):
     global config
     try:
         config = load_config(config_path)
-        logging.info(f"Configuration loaded from {config_path}")
     except Exception as e:
         logging.error(f"Failed to load configuration: {e}")
         raise
@@ -72,8 +72,6 @@ def collect_data():
             logging.warning(f"Skipping invalid host entry: {host_info}")
             return hostname or "unknown", {"role": role, "error": "Invalid host info"}
 
-        logging.info(f"Collecting from {hostname} (role: {role})")
-
         component_config = config.get('components', {}).get(role, {}).get('useful_data', [])
         host_results = []
 
@@ -109,6 +107,7 @@ def collect_data():
 
         return hostname, {"role": role, "data": host_results}
 
+    # TODO: Call ollama to identify the hosts to collect from, and collect the data through ollama using the MCP server
     async def run_all():
         tasks = [collect_for_host(host) for host in target_hosts]
         results = await asyncio.gather(*tasks)
@@ -116,7 +115,6 @@ def collect_data():
 
     try:
         all_results = asyncio.run(run_all())
-        logging.info("Collection completed.")
         return jsonify(all_results)
     except Exception as e:
         logging.exception(f"Critical error during collection: {e}")
@@ -130,7 +128,7 @@ def analyze_data():
     Expects a JSON like:
     {
         "collected_data": { ... previously collected data ... },
-        "failure_summary": "Test X failed due to timeout"
+        "test_report": "Test X failed due to timeout"
     }
     """
     if not request.is_json:
@@ -138,7 +136,7 @@ def analyze_data():
 
     data = request.get_json()
     collected_data = data.get('collected_data')
-    failure_summary = data.get('failure_summary', 'Unknown error')
+    test_report = data.get('test_report', 'Unknown error')
 
     if not collected_data:
         return jsonify({"error": "Missing 'collected_data' field"}), 400
@@ -158,12 +156,7 @@ def analyze_data():
                 context_str += f"Error:\n{item['error'][:500]}...\n"   # Limit length
         context_str += "\n"
 
-    logging.info("Requesting analysis from Ollama...")
-    hint = get_ai_hint(context_str, failure_summary, config.get('ollama'))  # Pass Ollama config
+    hint = get_root_cause_hint(context_str, test_report, config.get('ollama'))  # Pass Ollama config
 
-    logging.info("Analysis received.")
     # Return the response (adjust format according to MCP)
-    return jsonify({"ai_hint": hint})
-
-
-# TODO: add more endpoints as needed (e.g., to check status, list capabilities, etc.)
+    return jsonify({"root_cause_hint": hint})

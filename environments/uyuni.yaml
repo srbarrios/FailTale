@@ -1,7 +1,7 @@
 # Global SSH configuration (can be overridden per host if necessary)
 ssh_defaults:
-  username: "your_limited_ssh_user"  # User with minimal permissions on target hosts
-  private_key_path: "~/.ssh/id_rsa"  # Path to your SSH private key
+  username: "root"
+  private_key_path: "~/.ssh/id_ed25519"
   port: 22
   connection_timeout: 10 # Seconds
   command_timeout: 30    # Seconds
@@ -12,38 +12,40 @@ components:
     useful_data:
       - description: "Last 100 lines of the server's main logs"
         command: "mgrctl exec \"tail -n 100 /var/log/rhn/*.log\""
-      - description: "Status of the main service"
-        command: "mgradm status || echo 'systemctl not available'" # Add fallback
-      - description: "Processes related to the server"
-        command: "mgrctl exec \"ps aux | grep -E 'spacewalk|rhn|manager|uyuni|mgr|taskomatic' || echo 'grep found no processes'\""
-      - description: "Listening ports (TCP)"
-        command: "mgrctl exec \"ss -tlpn | grep LISTEN || netstat -tlpn | grep LISTEN || echo 'ss/netstat command not available'\""
+      - description: "List of existing activation keys"
+        command: "mgrctl exec \"spacecmd -q -u admin -p admin api activationkey.listActivationKeys\""
+      - description: "List of existing systems"
+        command: "mgrctl exec \"spacecmd -q -u admin -p admin api system.listSystems\""
+#      - description: "Status of the main service"
+#        command: "mgradm status || echo 'systemctl not available'" # Add fallback
+#      - description: "Processes related to the server"
+#        command: "mgrctl exec \"ps aux | grep -E 'spacewalk|rhn|manager|uyuni|mgr|taskomatic' || echo 'grep found no processes'\""
+#      - description: "Listening ports (TCP)"
+#        command: "mgrctl exec \"ss -tlpn | grep LISTEN || netstat -tlpn | grep LISTEN || echo 'ss/netstat command not available'\""
   minion:
     useful_data:
       - description: "Last 100 lines of the minion's log"
         command: "journalctl --identifier salt-minion --lines 100"
       - description: "Last 100 lines of the minion's zypper log"
         command: "tail -n 100 /var/log/zypper.log"
-      - description: "Processes related to the minion"
-        command: "ps aux | grep -E 'salt' || echo 'grep found no processes'"
-      - description: "Listening ports (TCP)"
-        command: "ss -tlpn | grep LISTEN || netstat -tlpn | grep LISTEN || echo 'ss/netstat command not available'"
+#      - description: "Processes related to the minion"
+#        command: "ps aux | grep -E 'salt' || echo 'grep found no processes'"
+#      - description: "Listening ports (TCP)"
+#        command: "ss -tlpn | grep LISTEN || netstat -tlpn | grep LISTEN || echo 'ss/netstat command not available'"
 
-# Definition of specific hosts if not passed dynamically
+# Definition of the hosts to be analyzed
 hosts:
- server:
-   hostname: "oscar-server.mgr.suse.de"
+ - hostname: "oscar-server.mgr.suse.de"
    role: "server"
    ssh_username: "root"
    ssh_password: "linux"
-# minion:
-#   hostname: "oscar-suse-minion.mgr.suse.de"
-#   role: "minion"
-#   ssh_username: "root"
-#   ssh_password: "linux"
+ - hostname: "oscar-suse-minion.mgr.suse.de"
+   role: "minion"
+   ssh_username: "root"
+   ssh_password: "linux"
 
 # Ollama configuration
 ollama:
-  base_url: "http://localhost:11434" # Base URL of your Ollama instance
-  model: "llama3"                    # Default model to use for analysis
-  request_timeout: 60               # Timeout for requests to Ollama
+  base_url: "http://localhost:11434"       # Base URL of your Ollama instance
+  model: "granite3-dense:8b"                     # Default model to use for analysis
+  request_timeout: 60                      # Timeout for requests to Ollama
