@@ -1,0 +1,4 @@
+And I select "1-SUSE-KEY-x86_64" from "activationKeys"         # features/step_definitions/navigation_steps.rb:164
+Unable to find xpath "//*[contains(@class, 'data-testid-activationKeys-child__control')]" (Capybara::ElementNotFound)
+./features/step_definitions/navigation_steps.rb:171:in `/^I select "([^"]*)" from "([^"]*)"$/'
+features/init_clients/sle_minion.feature:20:in `I select "1-SUSE-KEY-x86_64" from "activationKeys"'

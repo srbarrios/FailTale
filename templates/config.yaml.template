@@ -1,4 +1,4 @@
-# Configuration template for the MCP Server
+# Configuration template for the Server
 # Copy this file to config.yaml and edit it.
 # DO NOT commit config.yaml if it contains secrets!
 
@@ -37,17 +37,18 @@ components:
 
 # (Optional) Definition of specific hosts if not passed dynamically
 # hosts:
-#   server1:
-#     hostname: "server1.example.com"
+#   - hostname: "server1.example.com"
 #     role: "server"
 #     # Override defaults if necessary:
 #     # ssh_username: "another_user"
-#   minion10:
-#     hostname: "192.168.1.110"
+#   - hostname: "192.168.1.110"
 #     role: "minion"
 
 # Ollama configuration
 ollama:
-  base_url: "http://localhost:11434" # Base URL of your Ollama instance
-  model: "llama3"                    # Default model to use for analysis
-  request_timeout: 60               # Timeout for requests to Ollama
+  base_url: "http://localhost:11434"    # Base URL of your Ollama instance
+  model: "llama3"                       # Default model to use for analysis
+  request_timeout: 60                   # Timeout for requests to Ollama
+  embedding_model: "nomic-embed-text"   # Model to use for embeddings
+  persist_directory: "chroma_db"        # Chroma DB path
+  seed: 1                               # Seed to generate the same text for the same prompt.

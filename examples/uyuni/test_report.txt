@@ -1,0 +1,10 @@
+  Scenario: Bootstrap a SLES minion                                # features/init_clients/sle_minion.feature:13
+      This scenario ran at: 2025-04-23 22:05:05 +0200
+    When I follow the left menu "Systems > Bootstrapping"          # features/step_definitions/navigation_steps.rb:354
+    Then I should see a "Bootstrap Minions" text                   # features/step_definitions/navigation_steps.rb:621
+    When I enter the hostname of "sle_minion" as "hostname"        # features/step_definitions/navigation_steps.rb:463
+      The hostname of sle_minion is oscar-suse-minion.mgr.suse.de
+    And I enter "22" as "port"                                     # features/step_definitions/navigation_steps.rb:220
+    And I enter "root" as "user"                                   # features/step_definitions/navigation_steps.rb:220
+    And I enter "linux" as "password"                              # features/step_definitions/navigation_steps.rb:220
+    And I select "1-SUSE-KEY-x86_64" from "activationKeys"         # features/step_definitions/navigation_steps.rb:164

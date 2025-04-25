@@ -1,9 +1,14 @@
+# Copyright (c) 2025 Oscar Barrios
+#
+# This software is released under the MIT License.
+# https://opensource.org/licenses/MIT
+
 import argparse
 
-from mcp_server.server import app, load_environments
+from server.server import app, load_environments
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Run the MCP server.")
+    parser = argparse.ArgumentParser(description="Run the server.")
     parser.add_argument("--config", required=True, help="Path to the configuration file.")
     args = parser.parse_args()
 

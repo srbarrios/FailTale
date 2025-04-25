@@ -1,0 +1,57 @@
+# Global SSH configuration (can be overridden per host if necessary)
+ssh_defaults:
+  username: "root"
+  private_key_path: "~/.ssh/id_ed25519_test_env"
+  port: 22
+  connection_timeout: 10 # Seconds
+  command_timeout: 30    # Seconds
+
+# Definition of what data to collect per component role
+components:
+  server:
+    useful_data:
+      - description: "Last 100 lines of the server's main logs"
+        command: "mgrctl exec \"tail -n 100 /var/log/rhn/*.log\""
+      - description: "List of existing activation keys"
+        command: "mgrctl exec \"spacecmd -q -u admin -p admin api activationkey.listActivationKeys\""
+      - description: "List of existing systems"
+        command: "mgrctl exec \"spacecmd -q -u admin -p admin api system.listSystems\""
+      - description: "List of existing software channels"
+        command: "mgrctl exec \"spacecmd -q -u admin -p admin api channel.listSoftwareChannels\""
+      - description: "List of accepted salt keys"
+        command: "mgrctl exec \"spacecmd -q -u admin -p admin api saltkey.acceptedList\""
+      - description: "Status of the main service"
+        command: "mgradm status || echo 'systemctl not available'" # Add fallback
+      - description: "Processes related to the server"
+        command: "mgrctl exec \"ps aux | grep -E 'spacewalk|rhn|manager|uyuni|mgr|taskomatic' || echo 'grep found no processes'\""
+      - description: "Listening ports (TCP)"
+        command: "mgrctl exec \"ss -tlpn | grep LISTEN || netstat -tlpn | grep LISTEN || echo 'ss/netstat command not available'\""
+  minion:
+    useful_data:
+      - description: "Last 100 lines of the minion's log"
+        command: "journalctl --identifier salt-minion --lines 100"
+      - description: "Last 100 lines of the minion's zypper log"
+        command: "tail -n 100 /var/log/zypper.log"
+      - description: "Processes related to the minion"
+        command: "ps aux | grep -E 'salt' || echo 'grep found no processes'"
+      - description: "Listening ports (TCP)"
+        command: "ss -tlpn | grep LISTEN || netstat -tlpn | grep LISTEN || echo 'ss/netstat command not available'"
+
+# Definition of the hosts to be analyzed
+hosts:
+ - hostname: "oscar-server.mgr.suse.de"
+   role: "server"
+   mandatory: True
+#   ssh_username: "root"
+#   ssh_password: "linux"
+ - hostname: "oscar-suse-minion.mgr.suse.de"
+   role: "minion"
+
+# Ollama configuration
+ollama:
+  base_url: "http://localhost:11434"    # Base URL of your Ollama instance
+  model: "llama3"                       # Model to use for analysis
+  embedding_model: "nomic-embed-text"   # Model to use for embeddings
+  request_timeout: 60                   # Timeout for requests to Ollama
+  persist_directory: "examples/uyuni/chroma_db" # Chroma DB path
+  seed: 1                                       # Seed to generate the same text for the same prompt.
