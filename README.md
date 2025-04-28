@@ -1,3 +1,5 @@
+![fail-tale-image](https://github.com/user-attachments/assets/4d5f62f3-32bb-4c52-8258-7e802e190072)
+
 # FailTale: Tool to collect context from failed tests
 
 This project is a Proof of Concept for implementing a Test Reviewer. Its goal is to automate the collection of relevant debugging data from multiple components part of the product when an automated test fails, then analyze the collected data and provide insights into the root cause.
