@@ -17,7 +17,7 @@ from langchain_ollama import OllamaEmbeddings
 warnings.filterwarnings("ignore", category=MarkupResemblesLocatorWarning)
 
 # --- Configuration ---
-SOURCE_DIRECTORY = "/Users/obarrios/Desktop/docs"  # Folder with your HTML docs
+SOURCE_DIRECTORY = "/Users/obarrios/Desktop/docs"   # Folder with your HTML docs
 PERSIST_DIRECTORY = "examples/uyuni/chroma_db"      # Where ChromaDB will be saved
 EMBEDDING_MODEL = "nomic-embed-text"                # Ollama embedding model
 CHUNK_SIZE = 1800                                   # Max size of text chunks (in characters)
@@ -116,14 +116,10 @@ def main():
     loader = DirectoryLoader(
         SOURCE_DIRECTORY,
         glob="**/*.html",
-        # Use BSHTMLLoader to get full HTML content per document
-        # It reads the file and passes the content to BeautifulSoup
         loader_cls=BSHTMLLoader,
         loader_kwargs={'open_encoding': 'utf-8'}, # Specify encoding if needed
         show_progress=True,
         use_multithreading=True,
-        # Remove UnstructuredHTMLLoader specific kwargs if using BSHTMLLoader
-        # loader_kwargs={'mode': 'elements', 'strategy': 'fast'}
     )
 
     try:
@@ -156,17 +152,13 @@ def main():
 
         if not section_chunks:
             print(f"Warning: No chunks generated for document: {source_path}")
-            # Optionally, add the whole document if splitting failed but content exists
-            # plain_text = BeautifulSoup(html_text, "lxml").get_text(separator=" ", strip=True)
-            # if plain_text:
-            #    split_documents.append(Document(page_content=plain_text, metadata=metadata))
             continue # Skip doc if no chunks and not adding whole doc
 
         for heading_title, chunk_text in section_chunks:
             if not chunk_text.strip(): # Skip empty chunks
                 continue
             new_metadata = metadata.copy()
-            new_metadata['section_title'] = heading_title
+            new_metadata['title'] = heading_title
             split_documents.append(Document(page_content=chunk_text, metadata=new_metadata))
 
     print(f"Generated {len(split_documents)} chunks ready for embedding.")
@@ -193,7 +185,6 @@ def main():
 
     except Exception as e:
         print(f"Error during embedding or storing in ChromaDB: {e}")
-        # Add more specific error handling if needed based on potential Chroma/Ollama errors
 
 
 if __name__ == "__main__":
