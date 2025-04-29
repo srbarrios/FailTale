@@ -15,7 +15,7 @@ class FailTaleClient:
     A client to interact with the Server API.
     Loads target hosts from a specified YAML environment file.
     """
-    def __init__(self, base_url: str, environment_file: Optional[str] = None, timeout: int = 60):
+    def __init__(self, base_url: str, environment_file: Optional[str] = None, timeout: int = 180):
         """
         Initializes the client. Optionally loads hosts if environment_file is provided.
 
@@ -172,7 +172,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "-t", "--timeout",
         type=int,
-        default=60,
+        default=180,
         help="Request timeout in seconds."
     )
     parser.add_argument(

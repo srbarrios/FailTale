@@ -11,6 +11,8 @@ import asyncssh
 from asyncssh.connection import ConnectionLost, DisconnectError
 from asyncssh.misc import HostKeyNotVerifiable, PermissionDenied
 
+# --- Logging Configuration ---
+logging.basicConfig(level=logging.WARN, format="%(asctime)s - %(levelname)s - %(message)s")
 
 async def execute_remote_command_async(
         hostname: str,

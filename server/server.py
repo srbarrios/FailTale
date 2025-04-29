@@ -33,6 +33,7 @@ def load_environments(config_path):
 
 async def collect_for_host(host_info, ssh_defaults, components_config):
     """Collect useful data for a specific host asynchronously."""
+    print(f"Collecting data for host: {host_info}")
     hostname = host_info.get('hostname')
     role = host_info.get('role')
     if not hostname or not role:
@@ -102,6 +103,9 @@ def collect_data():
     components_config = config.get('components', {})
 
     target_hosts = get_hosts_to_collect(all_hosts, test_report, config.get('ollama'))
+    if not target_hosts:
+        return jsonify({"error": "Unexpected server error"}), 500
+
     logging.info("Identified hosts for collection: %s", target_hosts)
 
     async def run_all_collections():

@@ -49,9 +49,9 @@ hosts:
 
 # Ollama configuration
 ollama:
-  base_url: "http://localhost:11434"    # Base URL of your Ollama instance
+  base_url: "http://host.docker.internal:11434"    # Base URL of your Ollama instance
   model: "llama3"                       # Model to use for analysis
   embedding_model: "nomic-embed-text"   # Model to use for embeddings
-  request_timeout: 60                   # Timeout for requests to Ollama
+  request_timeout: 180                   # Timeout for requests to Ollama
   persist_directory: "examples/uyuni/chroma_db" # Chroma DB path
   seed: 1                                       # Seed to generate the same text for the same prompt.
