@@ -5,6 +5,7 @@
 
 import asyncio
 import logging
+import sys
 
 from flask import Flask, request, jsonify
 
@@ -13,7 +14,8 @@ from .llm_interaction import get_root_cause_hint, get_hosts_to_collect
 from .ssh_executor import execute_remote_command_async
 
 # --- Logging Configuration ---
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s", stream=sys.stdout, force=True)
+log = logging.getLogger(__name__)
 
 # --- App Initialization ---
 app = Flask(__name__)
@@ -27,7 +29,7 @@ def load_environments(config_path):
     try:
         config = load_config(config_path)
     except Exception as e:
-        logging.error(f"Failed to load configuration: {e}")
+        log.error(f"Failed to load configuration: {e}")
         raise
 
 
@@ -37,7 +39,7 @@ async def collect_for_host(host_info, ssh_defaults, components_config):
     hostname = host_info.get('hostname')
     role = host_info.get('role')
     if not hostname or not role:
-        logging.warning(f"Skipping invalid host entry: {host_info}")
+        log.warning(f"Skipping invalid host entry: {host_info}")
         return hostname or "unknown", {"role": role, "error": "Invalid host info"}
 
     current_user = host_info.get('ssh_username', ssh_defaults.get('username'))
@@ -51,7 +53,7 @@ async def collect_for_host(host_info, ssh_defaults, components_config):
         description = item.get('description', 'No description')
 
         if not command:
-            logging.warning(f"Empty command for {hostname}/{role}/{description}")
+            log.warning(f"Empty command for {hostname}/{role}/{description}")
             continue
 
         stdout, stderr, status = await execute_remote_command_async(
@@ -106,7 +108,7 @@ def collect_data():
     if not target_hosts:
         return jsonify({"error": "Unexpected server error"}), 500
 
-    logging.info("Identified hosts for collection: %s", target_hosts)
+    log.info("Identified hosts for collection: %s", target_hosts)
 
     async def run_all_collections():
         tasks = [
@@ -120,7 +122,7 @@ def collect_data():
         all_results = asyncio.run(run_all_collections())
         return jsonify(all_results)
     except Exception as e:
-        logging.exception(f"Critical error during collection: {e}")
+        log.exception(f"Critical error during collection: {e}")
         return jsonify({"error": "Unexpected server error"}), 500
 
 

@@ -6,6 +6,8 @@
 import json
 import logging
 import re
+import sys
+
 import requests
 
 from langchain_chroma import Chroma
@@ -16,7 +18,8 @@ from langchain_ollama.chat_models import ChatOllama
 from langchain_ollama.embeddings import OllamaEmbeddings
 
 # --- Logging Configuration ---
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s", stream=sys.stdout, force=True)
+log = logging.getLogger(__name__)
 
 # --- Configuration ---
 NUM_CHUNKS_TO_RETRIEVE = 5
@@ -26,7 +29,7 @@ TOP_K = 30
 
 def _validate_ollama_config(ollama_config):
     if not ollama_config or not ollama_config.get("base_url"):
-        logging.error("Ollama configuration missing or incomplete.")
+        log.error("Ollama configuration missing or incomplete.")
         return False
     return True
 
@@ -45,7 +48,7 @@ def get_root_cause_hint(context_collected, test_report, test_failure, ollama_con
             )
         return ai_response.strip() if ai_response else "No response content received."
     except Exception as e:
-        logging.exception("Unexpected error while requesting root cause hint: %s", e)
+        log.exception("Unexpected error while requesting root cause hint: %s", e)
         return f"Unexpected error during AI analysis: {e}"
 
 
@@ -56,7 +59,7 @@ def get_hosts_to_collect(hosts, test_report, ollama_config):
 
     ollama_url = f"{ollama_config['base_url'].rstrip('/')}/api/chat"
     model = ollama_config.get("model", "llama3")
-    timeout = ollama_config.get("request_timeout", 180)
+    timeout = ollama_config.get("request_timeout", 600)
 
     try:
         payload = {
@@ -73,17 +76,17 @@ def get_hosts_to_collect(hosts, test_report, ollama_config):
                 },
             ],
             "temperature": 0.7,
-            "max_tokens": 500,
+            "max_tokens": 1000,
             "stream": False
         }
 
-        print(f"Sending request to Ollama ({ollama_url}): {payload}")
+        log.info("Sending request to Ollama (%s):\n%s", ollama_url, payload)
         response = requests.post(ollama_url, json=payload, timeout=timeout)
         response.raise_for_status()
-        print(f"Ollama response: {response.json()}")
+        log.info(f"Ollama response:\n%s", response.json())
 
         if response.status_code != 200:
-            logging.error("Ollama returned an error: %s", response.content)
+            log.error("Ollama returned an error: %s", response.content)
             return None
 
         full_message = json.loads(response.content).get("message",{}).get("content", "")
@@ -94,14 +97,14 @@ def get_hosts_to_collect(hosts, test_report, ollama_config):
 
         return targeted_hosts
 
-    except requests.exceptions.Timeout:
-        logging.error("Timeout while contacting Ollama at %s (limit: %ss)", ollama_url, timeout)
+    except requests.exceptions.Timeout as e:
+        log.error("Timeout while contacting Ollama at %s (limit: %s): %s", ollama_url, timeout, e)
         return None
     except requests.exceptions.RequestException as e:
-        logging.error("Connection error while contacting Ollama: %s", e)
+        log.error("Connection error while contacting Ollama: %s", e)
         return None
     except Exception as e:
-        logging.exception("Unexpected error while requesting host list: %s", e)
+        log.exception("Unexpected error while requesting host list: %s", e)
         return None
 
 
@@ -112,7 +115,7 @@ def get_ollama_root_cause_hint(test_report, test_failure, context_collected, oll
 
     ollama_url = f"{ollama_config['base_url'].rstrip('/')}/api/chat"
     model = ollama_config.get("model", "llama3")
-    timeout = ollama_config.get("request_timeout", 60)
+    timeout = ollama_config.get("request_timeout", 600)
     seed = ollama_config.get("seed", None)
 
     try:
@@ -122,8 +125,9 @@ def get_ollama_root_cause_hint(test_report, test_failure, context_collected, oll
                 {
                     "role": "user",
                     "content": (
+                        f"Output only the result. Don't make any explanation or introduction.\n"
                         f"You are a QA Analyst, expert in Gherkin, Selenium, Javascript, XPath and Linux.\n"
-                        f"Focus on the test failure and logs first. Use documentation only to clarify edge cases.\n\n"
+                        f"Focus on the test failure and logs first.\n\n"
                         f"Test failure to analyze:\n{test_failure}\n\n"
                         f"Gherkin test report:\n{test_report}\n\n"
                         f"System logs (check Desc and Output values):\n{context_collected}\n\n"
@@ -131,16 +135,15 @@ def get_ollama_root_cause_hint(test_report, test_failure, context_collected, oll
                     ),
                 },
             ],
-            "temperature": 0.6,
-            "max_tokens": -2,
+            "max_tokens": -1,
             "seed": seed,
             "stream": False
         }
 
-        print(f"Sending request to Ollama ({ollama_url}): {payload}")
+        log.info("Sending request to Ollama (%s):\n%s", ollama_url, payload)
         response = requests.post(ollama_url, json=payload, timeout=timeout)
         response.raise_for_status()
-        print(f"Ollama response: {response.json()}")
+        log.info(f"Ollama response:\n%s", response.json())
 
         contents = []
         for line in response.iter_lines():
@@ -152,14 +155,14 @@ def get_ollama_root_cause_hint(test_report, test_failure, context_collected, oll
         full_message = "".join(contents)
         return full_message
 
-    except requests.exceptions.Timeout:
-        logging.error("Timeout while contacting Ollama at %s (limit: %ss)", ollama_url, timeout)
+    except requests.exceptions.Timeout as e:
+        log.error("Timeout while contacting Ollama at %s (limit: %s): %s", ollama_url, timeout, e)
         return f"Error: Timeout while contacting Ollama (limit: {timeout}s)."
     except requests.exceptions.RequestException as e:
-        logging.error("Connection error while contacting Ollama: %s", e)
+        log.error("Connection error while contacting Ollama: %s", e)
         return f"Connection error with Ollama: {e}"
     except Exception as e:
-        logging.exception("Unexpected error while requesting host list: %s", e)
+        log.exception("Unexpected error while requesting host list: %s", e)
         return f"Unexpected error during AI analysis: {e}"
 
 # TODO: This implementation doesn't work as expected. Please refrain from using it yet.
@@ -225,11 +228,11 @@ def get_rag_response_with_ollama(rag_chain, context_collected, test_report, test
         return ai_response.strip() if ai_response else "No response content received."
 
     except requests.exceptions.Timeout:
-        logging.error("Timeout while contacting Ollama.")
+        log.error("Timeout while contacting Ollama.")
         return "Error: Timeout while contacting Ollama."
     except requests.exceptions.RequestException as e:
-        logging.error("Connection error while contacting Ollama: %s", e)
+        log.error("Connection error while contacting Ollama: %s", e)
         return f"Connection error with Ollama: {e}"
     except Exception as e:
-        logging.exception("Unexpected error while processing Ollama response: %s", e)
+        log.exception("Unexpected error while processing Ollama response: %s", e)
         return f"Unexpected error during AI analysis: {e}"

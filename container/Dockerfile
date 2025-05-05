@@ -1,9 +1,12 @@
 FROM python:3.11-slim-bookworm
 LABEL maintainer="Oscar Barrios <srbarrios@gmail.com>"
-LABEL description="Runs Ollama (llama3, nomic-embed-text) and the FailTale server."
+LABEL description="Runs FailTale server"
 
 # Set environment variables to prevent interactive prompts during installs
 ENV DEBIAN_FRONTEND=noninteractive
+
+# Disable Python buffering
+ENV PYTHONUNBUFFERED=1
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
@@ -11,16 +14,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
-
-RUN curl -fsSL https://ollama.com/install.sh | sh
-
-RUN ollama serve & \
-    OLLAMA_PID=$! && \
-    sleep 10 && \
-    ollama pull llama3 && \
-    ollama pull nomic-embed-text && \
-    kill $OLLAMA_PID && \
-    sleep 2
 
 RUN mkdir -p /root/.ssh && \
     chmod 700 /root/.ssh && \
