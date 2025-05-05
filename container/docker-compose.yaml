@@ -1,0 +1,13 @@
+services:
+  failtale_service:
+    image: failtale
+    container_name: failtale_service
+    network_mode: host
+    volumes:
+      - /Users/obarrios/.ssh/id_ed25519_test_env:/root/.ssh/id_ed25519_test_env:ro
+      - /Users/obarrios/Workspace/repos/srbarrios/FailTale/examples/uyuni/uyuni.yaml:/app/config.yaml:ro
+      - ollama_data:/root/.ollama  # Volume to persist Ollama models
+    restart: unless-stopped
+
+volumes:
+  ollama_data:

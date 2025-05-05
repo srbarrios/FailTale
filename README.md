@@ -14,15 +14,15 @@ This project is a Proof of Concept for implementing a Test Reviewer. Its goal is
 
 ## Architecture
 
-2.  **Client:** Constructs a request and sends it to the local server.
-3.  **Server:**
+1. **Client:** Constructs a request and sends it to the local server.
+2. **Server:**
     * Receives the request.
     * Consults `config.yaml`.
     * Uses `llm_interaction` to get a list of hosts based on the test failure.
     * Uses `ssh_executor` to connect to hosts and run `collectors` commands.
     * Uses `llm_interaction` to analyse the test failure and return root cause hints.
     * Returns a formatted response to the client.
-4.  **Client:** Receives the response and injects it into the test report.
+3. **Client:** Receives the response and injects it into the test report.
 
 ## Setup
 
@@ -59,7 +59,7 @@ This project is a Proof of Concept for implementing a Test Reviewer. Its goal is
     ```
     The server will start listening on a local address (e.g., `http://localhost:5050`).
 
-2.  **Integrate the Client:** Adapt the code in `run_client.py` (or create one for your framework) so the failure hook calls your local  server endpoints.
+2.  **Integrate the Client:** Adapt the code in `run_client.py` (or create one for your framework) so the failure hook calls your local server endpoints.
     ```bash
     python run_client.py --config examples/uyuni/uyuni.yaml --test-report examples/uyuni/test_report.txt --test-failure examples/uyuni/test_failure.txt
     ```
@@ -67,6 +67,7 @@ This project is a Proof of Concept for implementing a Test Reviewer. Its goal is
 ### How to Use the Docker Setup (Ollama + FailTale Server)
 
 This guide explains how to build and run the Docker container that includes both the Ollama service (with pre-pulled models) and your FailTale Flask server.
+Warning: For now, avoid using the Docker setup for production, it performs poorly.
 
 #### Prerequisites
 
@@ -96,14 +97,13 @@ This guide explains how to build and run the Docker container that includes both
         ```
         * `-t failtale`: Tags the image with the name `failtale`. You can choose a different name.
         * `.`: Specifies the current directory as the build context.
-        * *Note:* This build process will take some time, especially the first time, as it downloads the base image, installs dependencies, and pulls the Ollama models (`llama3`, `nomic-embed-text`).
+        * *Note:* This build process will take some time, especially the first time, as it downloads the base image, installs dependencies, and pulls the Ollama models (`mistral`, `nomic-embed-text`).
 
 3.  **Run the Docker Container:**
     * Execute the following command in your terminal:
         ```bash
         docker run -d --rm \
           --net=host \
-          -p 5050:5050 \
           -v ~/.ssh/id_rsa:/root/.ssh/id_rsa:ro \
           -v ./examples/uyuni/uyuni.yaml:/app/config.yaml:ro \
           --name failtale_service \
@@ -112,6 +112,7 @@ This guide explains how to build and run the Docker container that includes both
     * **Explanation:**
         * `-d`: Runs the container in detached mode (background).
         * `--rm`: Automatically removes the container when it stops.
+        * `--net=host`: Uses the host network stack, allowing the container to access the host's network directly.
         * `-p 11434:11434`: Maps port 11434 (Ollama) inside the container to port 11434 on your host.
         * `-p 5050:5050`: Maps port 5050 (Flask server) inside the container to port 5050 on your host.
         * `-v ~/.ssh/id_rsa:/root/.ssh/id_rsa:ro`: **Crucial step.** Mounts your local private SSH key into the container at `/root/.ssh/id_rsa` in read-only mode (`:ro`).

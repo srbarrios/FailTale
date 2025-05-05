@@ -3,8 +3,8 @@ ssh_defaults:
   username: "root"
   private_key_path: "~/.ssh/id_ed25519_test_env"
   port: 22
-  connection_timeout: 10 # Seconds
-  command_timeout: 30    # Seconds
+  connection_timeout: 30 # Seconds
+  command_timeout: 180    # Seconds
 
 # Definition of what data to collect per component role
 components:
@@ -36,6 +36,14 @@ components:
         command: "ps aux | grep -E 'salt' || echo 'grep found no processes'"
       - description: "Listening ports (TCP)"
         command: "ss -tlpn | grep LISTEN || netstat -tlpn | grep LISTEN || echo 'ss/netstat command not available'"
+  proxy:
+    useful_data:
+      - description: "Last 100 lines of the proxy's log"
+        command: "journalctl --lines 100"
+  build_host:
+    useful_data:
+      - description: "Last 100 lines of the build host's log"
+        command: "journalctl --lines 100"
 
 # Definition of the hosts to be analyzed
 hosts:
@@ -49,8 +57,8 @@ hosts:
 
 # Ollama configuration
 ollama:
-  base_url: "http://host.docker.internal:11434"    # Base URL of your Ollama instance
-  model: "llama3"                       # Model to use for analysis
+  base_url: "http://localhost:11434"    # Base URL of your Ollama instance
+  model: "mistral"                       # Model to use for analysis
   embedding_model: "nomic-embed-text"   # Model to use for embeddings
   request_timeout: 180                   # Timeout for requests to Ollama
   persist_directory: "examples/uyuni/chroma_db" # Chroma DB path

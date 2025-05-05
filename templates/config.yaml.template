@@ -47,8 +47,8 @@ components:
 # Ollama configuration
 ollama:
   base_url: "http://localhost:11434"    # Base URL of your Ollama instance
-  model: "llama3"                       # Default model to use for analysis
-  request_timeout: 60                   # Timeout for requests to Ollama
+  model: "mistral"                      # Default model to use for analysis
+  request_timeout: 180                  # Timeout for requests to Ollama
   embedding_model: "nomic-embed-text"   # Model to use for embeddings
   persist_directory: "chroma_db"        # Chroma DB path
   seed: 1                               # Seed to generate the same text for the same prompt.

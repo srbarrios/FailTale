@@ -5,6 +5,7 @@
 
 import asyncio
 import logging
+import sys
 
 from flask import Flask, request, jsonify
 
@@ -13,11 +14,12 @@ from .llm_interaction import get_root_cause_hint, get_hosts_to_collect
 from .ssh_executor import execute_remote_command_async
 
 # --- Logging Configuration ---
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s", stream=sys.stdout, force=True)
+log = logging.getLogger(__name__)
 
 # --- App Initialization ---
 app = Flask(__name__)
-config = None  # Global config variable
+config = {}  # Global config variable
 
 
 # --- Helpers ---
@@ -27,7 +29,7 @@ def load_environments(config_path):
     try:
         config = load_config(config_path)
     except Exception as e:
-        logging.error(f"Failed to load configuration: {e}")
+        log.error(f"Failed to load configuration: {e}")
         raise
 
 
@@ -37,7 +39,7 @@ async def collect_for_host(host_info, ssh_defaults, components_config):
     hostname = host_info.get('hostname')
     role = host_info.get('role')
     if not hostname or not role:
-        logging.warning(f"Skipping invalid host entry: {host_info}")
+        log.warning(f"Skipping invalid host entry: {host_info}")
         return hostname or "unknown", {"role": role, "error": "Invalid host info"}
 
     current_user = host_info.get('ssh_username', ssh_defaults.get('username'))
@@ -51,7 +53,7 @@ async def collect_for_host(host_info, ssh_defaults, components_config):
         description = item.get('description', 'No description')
 
         if not command:
-            logging.warning(f"Empty command for {hostname}/{role}/{description}")
+            log.warning(f"Empty command for {hostname}/{role}/{description}")
             continue
 
         stdout, stderr, status = await execute_remote_command_async(
@@ -92,11 +94,14 @@ def collect_data():
     test_report = data.get('test_report')
 
     if not all_hosts or not isinstance(all_hosts, list):
+        log.error("Invalid or missing 'hosts' field in request")
         return jsonify({"error": "Missing or invalid 'hosts' field"}), 400
     if not isinstance(test_report, str):
+        log.error(f"Invalid 'test_report' format: {type(test_report)}")
         return jsonify({"error": "Invalid 'test_report' format"}), 400
 
     if not config:
+        log.error("Server configuration not loaded")
         return jsonify({"error": "Server configuration not loaded"}), 500
 
     ssh_defaults = config.get('ssh_defaults', {})
@@ -104,9 +109,10 @@ def collect_data():
 
     target_hosts = get_hosts_to_collect(all_hosts, test_report, config.get('ollama'))
     if not target_hosts:
+        log.error("No hosts identified for collection")
         return jsonify({"error": "Unexpected server error"}), 500
 
-    logging.info("Identified hosts for collection: %s", target_hosts)
+    log.info("Identified hosts for collection: %s", target_hosts)
 
     async def run_all_collections():
         tasks = [
@@ -120,7 +126,7 @@ def collect_data():
         all_results = asyncio.run(run_all_collections())
         return jsonify(all_results)
     except Exception as e:
-        logging.exception(f"Critical error during collection: {e}")
+        log.exception(f"Critical error during collection: {e}")
         return jsonify({"error": "Unexpected server error"}), 500
 
 
@@ -128,6 +134,7 @@ def collect_data():
 def analyze_data():
     """Endpoint to analyze collected data and provide root cause hints using LLM."""
     if not request.is_json:
+        log.error("Expected JSON request")
         return jsonify({"error": "Expected JSON request"}), 400
 
     data = request.get_json()
@@ -136,21 +143,30 @@ def analyze_data():
     test_failure = data.get('test_failure', 'Unknown test failure')
 
     if not collected_data:
+        log.error("Missing 'collected_data' field in request")
         return jsonify({"error": "Missing 'collected_data' field"}), 400
     if not config or not config.get('ollama'):
+        log.error("Ollama configuration missing in server configuration")
         return jsonify({"error": "Ollama configuration missing"}), 500
+    if not isinstance(collected_data, dict):
+        log.error(f"Invalid 'collected_data' format: {type(collected_data)}")
+        return jsonify({"error": "Invalid 'collected_data' format"}), 400
 
-    # Format collected data for LLM prompt
-    context_str = ""
-    for host, info in collected_data.items():
-        context_str += f"--- Host: {host} (Role: {info.get('role', 'unknown')}) ---\n"
-        for item in info.get('data', []):
-            context_str += f"Desc: {item.get('description')}\n"
-            if item.get('output'):
-                context_str += f"Output:\n{item['output'][:500]}\n"
-            if item.get('error'):
-                context_str += f"Error:\n{item['error'][:500]}\n"
-        context_str += "\n"
+    try:
+        # Format collected data for LLM prompt
+        context_str = ""
+        for host, info in collected_data.items():
+            context_str += f"--- Host: {host} (Role: {info.get('role', 'unknown')}) ---\n"
+            for item in info.get('data', []):
+                context_str += f"Log Description: {item.get('description')}\n"
+                if item.get('output'):
+                    context_str += f"Log Output:\n{item['output'][:500]}\n"
+                if item.get('error'):
+                    context_str += f"Log Error:\n{item['error'][:500]}\n"
+            context_str += "\n"
+    except Exception as e:
+        log.exception(f"Error formatting collected data for LLM prompt: {e}")
+        return jsonify({"error": "Error formatting collected data for LLM prompt"}), 500
 
     hint = get_root_cause_hint(context_str, test_report, test_failure, config.get('ollama'), with_rag=False)
     return jsonify({"root_cause_hint": hint})

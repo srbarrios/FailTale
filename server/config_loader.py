@@ -26,6 +26,6 @@ def load_config(config_path='config.yaml'):
     except yaml.YAMLError as e:
         logging.error("YAML parsing error in %s: %s", config_path, e)
     except Exception as e:
-        logging.exception("Unexpected error while loading config from %s", config_path)
+        logging.exception("Unexpected error %s while loading config from %s", e, config_path)
 
     return None
