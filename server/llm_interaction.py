@@ -24,7 +24,7 @@ log = logging.getLogger(__name__)
 
 # --- Configuration ---
 NUM_CHUNKS_TO_RETRIEVE = 5
-TEMPERATURE = 0.5
+TEMPERATURE = 0.4
 TOP_K = 20
 
 
@@ -37,17 +37,17 @@ def _validate_ollama_config(ollama_config):
     return True
 
 
-def get_root_cause_hint(context_collected, test_report, test_failure, ollama_config, with_rag=False):
+def get_root_cause_hint(context_collected, page_html, test_report, test_failure, ollama_config, with_rag=False):
     """Send collected debug data to Ollama and request a root cause hint."""
     try:
         if with_rag:
             rag_chain = initialize_rag_system(ollama_config)
             ai_response = get_rag_response_with_ollama(
-                rag_chain, context_collected, test_report, test_failure, ollama_config
+                rag_chain, context_collected, page_html, test_report, test_failure, ollama_config
             )
         else:
             ai_response = get_ollama_root_cause_hint(
-                test_report, test_failure, context_collected, ollama_config
+                test_report, test_failure, context_collected, page_html, ollama_config
             )
         return ai_response.strip() if ai_response else "No response content received."
     except Exception as e:
@@ -113,7 +113,7 @@ def get_hosts_to_collect(hosts, test_report, ollama_config):
         return None
 
 
-def get_ollama_root_cause_hint(test_report, test_failure, context_collected, ollama_config):
+def get_ollama_root_cause_hint(test_report, test_failure, context_collected, page_html, ollama_config):
     """Send a test context with Ollama and get a root cause hint."""
     if not _validate_ollama_config(ollama_config):
         return "Error: Ollama configuration is not available."
@@ -136,16 +136,17 @@ def get_ollama_root_cause_hint(test_report, test_failure, context_collected, oll
                         f"1. The test failure message: {test_failure}\n\n"
                         f"2. The full Gherkin test report: {test_report}\n\n"
                         f"3. System logs from the test environment:{context_collected}\n\n"
+                        f"4. Pre-processed current HTML page: {page_html}\n\n"
                         f"Instructions:\n"
-                        f"- Focus on exact word matches between the test failure and logs.\n"
-                        f"- No introduction. No summary. No paths. Do not give hypothesis.\n\n"
+                        f"- Focus on exact word matches between the test failure and the rest of data.\n"
+                        f"- No introduction. No summary. No paths. Do not give hypothesis.\n"
                         f"- Give facts (example: Description and Output logs related to the hint)\n"
                         f"Output only 1 hint.\n"
                     ),
                 },
             ],
             "seed": seed,
-            "max_tokens": 100,
+            "max_tokens": 42,
             "temperature": TEMPERATURE,
             "stream": False
         }
@@ -222,7 +223,7 @@ def initialize_rag_system(ollama_config):
     return rag_chain
 
 
-def get_rag_response_with_ollama(rag_chain, context_collected, test_report, test_failure, ollama_config):
+def get_rag_response_with_ollama(rag_chain, context_collected, page_html, test_report, test_failure, ollama_config):
     """Get a RAG system response and forward it to Ollama for analysis."""
     if not _validate_ollama_config(ollama_config):
         return "Error: Ollama configuration is not available."
@@ -232,6 +233,7 @@ def get_rag_response_with_ollama(rag_chain, context_collected, test_report, test
             f"- Test failure:\n{test_failure}\n\n"
             f"- Test report:\n{test_report}\n\n"
             f"- System logs:\n{context_collected}"
+            f"- Pre-processed current HTML page:\n{page_html}"
         )
 
         ai_response = rag_chain.invoke(context)

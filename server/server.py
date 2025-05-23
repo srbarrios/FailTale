@@ -4,9 +4,11 @@
 # https://opensource.org/licenses/MIT
 
 import asyncio
+import json
 import logging
 import sys
 
+from bs4 import BeautifulSoup
 from flask import Flask, request, jsonify
 
 from .config_loader import load_config
@@ -14,7 +16,8 @@ from .llm_interaction import get_root_cause_hint, get_hosts_to_collect
 from .ssh_executor import execute_remote_command_async
 
 # --- Logging Configuration ---
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s", stream=sys.stdout, force=True)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s", stream=sys.stdout,
+                    force=True)
 log = logging.getLogger(__name__)
 
 # --- App Initialization ---
@@ -74,6 +77,38 @@ async def collect_for_host(host_info, ssh_defaults, components_config):
         })
 
     return hostname, {"role": role, "data": host_results}
+
+
+def reduce_html_to_json(page_html):
+    """Extracts simplified, visible elements with semantic roles from raw HTML."""
+    allowed_tags = { "h1", "h2", "h3", "h4", "h5", "h6",
+                    "label", "button", "a", "input", "select",
+                    "textarea", "p", "div", "span" }
+
+    soup = BeautifulSoup(page_html, "html.parser")
+    result = []
+
+    for tag in soup.find_all(allowed_tags):
+        # Filter out non-visible elements by common static rules
+        style = tag.get("style", "")
+        if any(keyword in style for keyword in ["display:none", "visibility:hidden", "opacity:0"]):
+            continue
+        if tag.get("aria-hidden") == "true":
+            continue
+        if "hidden" in tag.get("class",""):
+            continue
+        if tag.name == "input" and tag.get("type") in {"hidden", "submit"}:
+            continue
+
+        # Get visible text or fallback attributes
+        text = tag.get_text(separator=" ", strip=True)
+        if not text and tag.name == "input":
+            text = tag.get("value") or tag.get("placeholder") or tag.get("title")
+
+        if text:
+            result.append({tag.name: text})
+
+    return result
 
 
 # --- Endpoints ---
@@ -139,6 +174,7 @@ def analyze_data():
 
     data = request.get_json()
     collected_data = data.get('collected_data')
+    page_html = data.get('page_html', 'Unknown page HTML')
     test_report = data.get('test_report', 'Unknown test report')
     test_failure = data.get('test_failure', 'Unknown test failure')
 
@@ -168,5 +204,17 @@ def analyze_data():
         log.exception(f"Error formatting collected data for LLM prompt: {e}")
         return jsonify({"error": "Error formatting collected data for LLM prompt"}), 500
 
-    hint = get_root_cause_hint(context_str, test_report, test_failure, config.get('ollama'), with_rag=False)
+    try:
+        # Pre-process HTML page to reduce tokens
+        if page_html and isinstance(page_html, str):
+            reduced_html_json = reduce_html_to_json(page_html)
+            reduced_html = json.dumps(reduced_html_json)
+        else:
+            reduced_html = "Unknown page HTML."
+    except Exception as e:
+        log.exception(f"Error processing HTML page: {e}")
+        return jsonify({"error": "Error processing HTML page"}), 500
+
+    hint = get_root_cause_hint(context_str, reduced_html, test_report, test_failure, config.get('ollama'),
+                               with_rag=False)
     return jsonify({"root_cause_hint": hint})
