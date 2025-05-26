@@ -64,10 +64,9 @@ This project is a Proof of Concept for implementing a Test Reviewer. Its goal is
     python run_client.py --config examples/uyuni/uyuni.yaml --test-report examples/uyuni/test_report.txt --test-failure examples/uyuni/test_failure.txt
     ```
 
-### How to Use the Docker Setup (Ollama + FailTale Server)
+### How to Use the Docker Setup (FailTale Server container)
 
-This guide explains how to build and run the Docker container that includes both the Ollama service (with pre-pulled models) and your FailTale Flask server.
-Warning: For now, avoid using the Docker setup for production, it performs poorly.
+This guide explains how to build and run the Docker container that includes the FailTale Flask server.
 
 #### Prerequisites
 
@@ -88,7 +87,7 @@ Warning: For now, avoid using the Docker setup for production, it performs poorl
     * Verify your `requirements.txt` is up-to-date in the project root.
     * Verify your `config.yaml` exists and is configured correctly (especially `ollama.base_url: "http://localhost:11434"` and `ssh_defaults`).
 
-2.  **Build the Docker Image:**
+2.  **Optionally, build the Docker Image:**
     * Open your terminal or command prompt.
     * Navigate (`cd`) to the root directory of your `FailTale` project (where the `Dockerfile` is).
     * Run the build command:
@@ -107,7 +106,7 @@ Warning: For now, avoid using the Docker setup for production, it performs poorl
           -v ~/.ssh/id_rsa:/root/.ssh/id_rsa:ro \
           -v ./examples/uyuni/uyuni.yaml:/app/config.yaml:ro \
           --name failtale_service \
-          failtale
+          ghcr.io/srbarrios/failtale # Replace it with failtale if you built it locally
         ```
     * **Explanation:**
         * `-d`: Runs the container in detached mode (background).
@@ -130,7 +129,7 @@ Warning: For now, avoid using the Docker setup for production, it performs poorl
         ```
     * Look for output similar to "\[Startup\] Ollama service appears to be running." and Flask's startup messages.
 
-5.  **Run the Client (from your Host Machine):**
+5.  **Option A) Run the Client (from your Host Machine):**
     * Open a *new* terminal window on your host machine.
     * Activate the Python virtual environment where you have the client dependencies installed.
     * Run the `run_client.py` script, pointing it to the server running inside the container (`http://localhost:5050`):
@@ -144,7 +143,42 @@ Warning: For now, avoid using the Docker setup for production, it performs poorl
         * Replace `path/to/your/env_config.yaml`, `path/to/your/report.txt`, and `path/to/your/failure.txt` with the actual paths on your host machine.
         * The client will connect to `localhost:5050`, which Docker maps to the Flask server inside the container. The Flask server will then connect to Ollama at `http://localhost:11434` (within the container network). The SSH executor inside the container will use the mounted key to connect to external hosts.
 
-6.  **Stopping the Container:**
+   6. **Option B) Use the AI Test Reviewer Ruby Class from your Test Framework:**
+       * If you're using a Ruby test framework, you can initialize the ai_test_reviewer class to interact with the FailTale server:
+       ```ruby
+           require 'ai_test_reviewer'
+
+           reviewer = AiTestReviewer.new(
+             config_path: 'path/to/your/env_config.yaml',
+             server_url: 'http://localhost:5050'
+           )
+
+         After do |scenario|
+           if scenario.failed?
+              attach_ai_root_cause_hint(scenario)
+         end
+
+         def attach_ai_root_cause_hint(scenario)
+           file_path = scenario.location.file
+           feature_text = File.read(file_path)
+           collected_data = $ai_test_reviewer.collect(feature_text)
+           if scenario.exception
+           error_message = scenario.exception.message
+           stacktrace = scenario.exception.backtrace.join("\n")
+           test_failure = "#{error_message}\n#{stacktrace}"
+           else
+           test_failure = 'No failure message available.'
+           end
+           result = $ai_test_reviewer.analyze(collected_data, page.html, feature_text, test_failure)
+           root_cause_hint = result.fetch('root_cause_hint', nil)&.to_s
+           return if root_cause_hint.nil? || root_cause_hint.empty?
+           
+           attach root_cause_hint, 'text/plain'
+           $stdout.puts root_cause_hint
+         end
+      ```
+    
+7. **Stopping the Container:**
     * When you're finished, you can stop the container using its name:
         ```bash
         docker stop failtale_service

@@ -90,6 +90,7 @@ def reduce_html_to_json(page_html):
 
     soup = BeautifulSoup(page_html, "html.parser")
     result = []
+    seen_texts = set()
 
     for tag in soup.find_all(allowed_tags):
         # Filter out non-visible elements by common static rules
@@ -109,7 +110,8 @@ def reduce_html_to_json(page_html):
         if not text and tag.name == "input":
             text = tag.get("value") or tag.get("placeholder") or tag.get("title")
 
-        if text:
+        if text and text not in seen_texts:
+            seen_texts.add(text)
             if any(kwd in text for kwd in error_keywords) or any(any(err in cls.lower() for err in error_classes) for cls in class_list):
                 result.append({'possible_error': text})
             else:

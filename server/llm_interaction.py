@@ -24,7 +24,7 @@ log = logging.getLogger(__name__)
 
 # --- Configuration ---
 NUM_CHUNKS_TO_RETRIEVE = 5
-TEMPERATURE = 0.4
+TEMPERATURE = 0.5
 TOP_K = 20
 
 
@@ -133,17 +133,17 @@ def get_ollama_root_cause_hint(test_report, test_failure, context_collected, pag
                         f"You are a QA Analyst. You will analyze data from a failed automated test. "
                         f"Your task is to provide a single, concise hint that identifies the most likely root cause.\n"
                         f"You are given:\n"
-                        f"1. The test failure message: {test_failure}\n\n"
-                        f"2. The full Gherkin test report: {test_report}\n\n"
-                        f"3. System logs from the test environment:{context_collected}\n\n"
-                        f"4. Pre-processed current HTML page in JSON format: {page_html}\n\n"
+                        f"- The test failure message: {test_failure}\n\n"
+                        f"- The full Gherkin test report: {test_report}\n\n"
+                        f"- System logs from the test environment: {context_collected}\n\n"
+                        f"- Pre-processed current HTML page in JSON format: {page_html}\n\n"
                         f"Instructions:\n"
-                        f"- First look for 'possible_error' keys on the HTML page.\n"
-                        f"- Second look for on exact word matches between the test failure and the rest of data.\n"
-                        f"- Third look for logs with keyword error, err or error codes.\n"
-                        f"- No introduction. No summary. No paths. Do not give hypothesis.\n"
-                        f"- Give facts (example: Description and Output logs related to the hint)\n"
-                        f"Output a maximum of 2 hints.\n"
+                        f"- Focus on 'possible_error' keys in the HTML.\n"
+                        f"- Look for exact word matches between the failure message and other data.\n"
+                        f"- Prioritize logs with the keywords 'error', 'err', or error codes.\n"
+                        f"- Don't output: introduction, summary, paths, hypothesis, instructions.\n\n"
+                        f"- Output only the final hint.\n\n"
+                        f"Hint:"
                     ),
                 },
             ],
@@ -192,11 +192,12 @@ def initialize_rag_system(ollama_config):
         "1. Test details:|{additional_context}|\n\n"
         "2. Relevant documentation:|{documentation}|\n\n"
         "Instructions:\n"
+        f"- Focus on 'possible_error' keys on the HTML page.\n"
         "- Focus on exact word matches between the test failure and logs.\n"
         "- Focus on exact word matches between the test report and the documentation.\n"
-        "- No introduction. No summary. No paths. Do not give hypothesis.\n\n"
+        "- Don't output: introduction, summary, paths, hypothesis, instructions.\n\n"
         "- Give facts (example: Description and Output logs related to the hint)\n"
-        "Output only 1 hint.\n"
+        "Output only the hint.\n"
     )
 
     model = ollama_config.get("model", "mistral")
