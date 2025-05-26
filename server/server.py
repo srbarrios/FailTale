@@ -85,12 +85,16 @@ def reduce_html_to_json(page_html):
                     "label", "button", "a", "input", "select",
                     "textarea", "p", "div", "span" }
 
+    error_keywords = ["error", "failed", "exception", "not found", "unauthorized", "invalid", "missing"]
+    error_classes = ["text-danger", "has-error", "alert-danger", "alert", "error"]
+
     soup = BeautifulSoup(page_html, "html.parser")
     result = []
 
     for tag in soup.find_all(allowed_tags):
         # Filter out non-visible elements by common static rules
-        style = tag.get("style", "")
+        style = tag.get("style", "").lower()
+        class_list = tag.get("class", [])
         if any(keyword in style for keyword in ["display:none", "visibility:hidden", "opacity:0"]):
             continue
         if tag.get("aria-hidden") == "true":
@@ -101,12 +105,15 @@ def reduce_html_to_json(page_html):
             continue
 
         # Get visible text or fallback attributes
-        text = tag.get_text(separator=" ", strip=True)
+        text = tag.get_text(separator=" ", strip=True).lower()
         if not text and tag.name == "input":
             text = tag.get("value") or tag.get("placeholder") or tag.get("title")
 
         if text:
-            result.append({tag.name: text})
+            if any(kwd in text for kwd in error_keywords) or any(any(err in cls.lower() for err in error_classes) for cls in class_list):
+                result.append({'possible_error': text})
+            else:
+                result.append({tag.name: text})
 
     return result
 

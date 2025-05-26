@@ -136,12 +136,14 @@ def get_ollama_root_cause_hint(test_report, test_failure, context_collected, pag
                         f"1. The test failure message: {test_failure}\n\n"
                         f"2. The full Gherkin test report: {test_report}\n\n"
                         f"3. System logs from the test environment:{context_collected}\n\n"
-                        f"4. Pre-processed current HTML page: {page_html}\n\n"
+                        f"4. Pre-processed current HTML page in JSON format: {page_html}\n\n"
                         f"Instructions:\n"
-                        f"- Focus on exact word matches between the test failure and the rest of data.\n"
+                        f"- First look for 'possible_error' keys on the HTML page.\n"
+                        f"- Second look for on exact word matches between the test failure and the rest of data.\n"
+                        f"- Third look for logs with keyword error, err or error codes.\n"
                         f"- No introduction. No summary. No paths. Do not give hypothesis.\n"
                         f"- Give facts (example: Description and Output logs related to the hint)\n"
-                        f"Output only 1 hint.\n"
+                        f"Output a maximum of 2 hints.\n"
                     ),
                 },
             ],
