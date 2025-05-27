@@ -1,16 +1,21 @@
 # Core dependencies
-paramiko            # For SSH connections
-PyYAML              # For parsing config.yaml
-requests            # For calling Ollama API (if using REST)
-ollama              # Official Ollama client library (alternative for interaction)
-asyncssh             # For async SSH connections
-asyncio              # For async programming
-langchain-core       # Core LangChain library
-langchain            # For LangChain framework
-langchain-ollama     # For Ollama integration with LangChain
-langchain_community  # For LangChain community modules
-langchain_chroma     # For ChromaDB integration
-beautifulsoup4       # For parsing HTML (if needed)
+paramiko               # For SSH connections
+PyYAML                 # For parsing config.yaml
+requests               # For calling Ollama API (if using REST)
+ollama                 # Official Ollama client library (alternative for interaction)
+asyncssh               # For async SSH connections
+asyncio                # For async programming
+beautifulsoup4         # For parsing HTML (if needed)
+protobuf               # For protocol buffers (if using Ollama's gRPC API)
+openai                 # For OpenAI API integration
+google-generativeai    # For Google Generative AI integration
+langchain-core         # Core LangChain library
+langchain              # For LangChain framework
+langchain-ollama       # For Ollama integration with LangChain
+langchain_community    # For LangChain community modules
+langchain_chroma       # For ChromaDB integration
+langchain-google-genai # For Google GenAI integration
+langchain-openai       # For OpenAI integration with LangChain
 
 # Web server framework (Choose one, e.g., Flask or FastAPI)
 Flask          # Example lightweight framework for the server
@@ -21,4 +26,3 @@ Flask          # Example lightweight framework for the server
 pytest
 pytest-cov     # For coverage reports
 pytest-asyncio       # For async testing with pytest
-# responses    # Useful for mocking HTTP requests (Ollama API, client tests)

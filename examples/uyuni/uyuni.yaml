@@ -55,11 +55,23 @@ hosts:
  - hostname: "oscar-suse-minion.mgr.suse.de"
    role: "minion"
 
-# Ollama configuration
+# LLMs configurations
+default_llm: "gemini" # Default LLM to use for analysis
+
 ollama:
-  base_url: "http://localhost:11434"    # Base URL of your Ollama instance
-  model: "mistral"                       # Model to use for analysis
-  embedding_model: "nomic-embed-text"   # Model to use for embeddings
-  request_timeout: 180                   # Timeout for requests to Ollama
+  base_url: "http://localhost:11434"            # Base URL of your Ollama instance
+  model: "mistral"                              # Model to use for analysis
+  embedding_model: "nomic-embed-text"           # Model to use for embeddings
+  request_timeout: 180                          # Timeout for requests to Ollama
   persist_directory: "examples/uyuni/chroma_db" # Chroma DB path
-  seed: 1                                       # Seed to generate the same text for the same prompt.
+  seed: 42                                      # Seed to generate the same text for the same prompt.
+
+gemini:
+  # api_key: "YOUR_GEMINI_KEY_DIRECTLY_HERE" # Direct key
+  api_key_env_var: "GEMINI_API_KEY" # Custom Env Var
+  model: "gemini-2.0-flash"
+
+openai:
+  # api_key: "YOUR_OPENAI_KEY_DIRECTLY_HERE" # Direct key
+  api_key_env_var: "OPENAI_API_KEY" # Custom Env Var
+  model: "gpt-4.1"
