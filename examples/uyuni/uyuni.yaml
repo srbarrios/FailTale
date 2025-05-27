@@ -56,7 +56,8 @@ hosts:
    role: "minion"
 
 # LLMs configurations
-default_llm: "gemini" # Default LLM to use for analysis
+default_llm_provider: "gemini" # Default LLM to use for analysis
+base_prompt: "You are an expert in Uyuni project." # Prompt to be prepended in LLMs calls
 
 ollama:
   base_url: "http://localhost:11434"            # Base URL of your Ollama instance
@@ -65,13 +66,16 @@ ollama:
   request_timeout: 180                          # Timeout for requests to Ollama
   persist_directory: "examples/uyuni/chroma_db" # Chroma DB path
   seed: 42                                      # Seed to generate the same text for the same prompt.
+  multimodal: true                              # Whether the model supports multimodal input
 
 gemini:
   # api_key: "YOUR_GEMINI_KEY_DIRECTLY_HERE" # Direct key
   api_key_env_var: "GEMINI_API_KEY" # Custom Env Var
-  model: "gemini-2.0-flash"
+  model: "gemini-2.0-flash"         # Model to use for analysis
+  multimodal: true                  # Whether the model supports multimodal input
 
 openai:
   # api_key: "YOUR_OPENAI_KEY_DIRECTLY_HERE" # Direct key
   api_key_env_var: "OPENAI_API_KEY" # Custom Env Var
-  model: "gpt-4.1"
+  model: "gpt-4.1"                  # Model to use for analysis
+  multimodal: true                  # Whether the model supports multimodal input

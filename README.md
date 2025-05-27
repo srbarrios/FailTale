@@ -19,7 +19,7 @@ This project is a Proof of Concept for implementing a Test Reviewer. Its goal is
     * Receives the request.
     * Consults `config.yaml`.
     * Uses `llm_interaction` to get a list of hosts based on the test failure.
-    * Uses `ssh_executor` to connect to hosts and run `collectors` commands.
+    * Uses `ssh_executor` to connect to hosts and collect data.
     * Uses `llm_interaction` to analyse the test failure and return root cause hints.
     * Returns a formatted response to the client.
 3. **Client:** Receives the response and injects it into the test report.
@@ -41,7 +41,7 @@ This project is a Proof of Concept for implementing a Test Reviewer. Its goal is
     ```bash
     pip install -r requirements.txt
     ```
-4.  **Configure Ollama:** Ensure Ollama is installed, running, and has a model downloaded (e.g., `ollama pull granite3-dense:8b`).
+4.  **Configure Ollama:** Ensure Ollama is installed, running, and has a model downloaded (e.g., `ollama pull mistral`).
 5.  **Configure SSH Access:**
     * Generate an SSH key pair if you don't have one (`ssh-keygen`).
     * Create a **minimally privileged** user on each target host (server, minion, proxy).

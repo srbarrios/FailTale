@@ -8,7 +8,7 @@ asyncio                # For async programming
 beautifulsoup4         # For parsing HTML (if needed)
 protobuf               # For protocol buffers (if using Ollama's gRPC API)
 openai                 # For OpenAI API integration
-google-generativeai    # For Google Generative AI integration
+google-genai           # For Google Generative AI integration
 langchain-core         # Core LangChain library
 langchain              # For LangChain framework
 langchain-ollama       # For Ollama integration with LangChain
