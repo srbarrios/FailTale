@@ -10,7 +10,7 @@ This project is a Proof of Concept for implementing a Test Reviewer. Its goal is
 * **Secure SSH:** Connects to hosts via SSH using keys and minimally privileged (read-only) users.
 * **On-Source Filtering:** Applies filters (`tail`, `grep`) directly in the remote commands to reduce data volume.
 * **API Interface:** Exposes functionalities via a local API.
-* **Local LLM Integration:** Interacts with Ollama in two phases: target components to debug and analysis of test failure.
+* **Local LLM Integration:** Interacts with Ollama, Gemini or OpenAI in two phases: target components to debug and analysis of test failure.
 
 ## Architecture
 
@@ -41,7 +41,7 @@ This project is a Proof of Concept for implementing a Test Reviewer. Its goal is
     ```bash
     pip install -r requirements.txt
     ```
-4.  **Configure Ollama:** Ensure Ollama is installed, running, and has a model downloaded (e.g., `ollama pull mistral`).
+4.  **(Local LLMs) Configure Ollama:** Ensure Ollama is installed, running, and has a model downloaded (e.g., `ollama pull mistral`).
 5.  **Configure SSH Access:**
     * Generate an SSH key pair if you don't have one (`ssh-keygen`).
     * Create a **minimally privileged** user on each target host (server, minion, proxy).
@@ -105,6 +105,7 @@ This guide explains how to build and run the Docker container that includes the 
           --net=host \
           -v ~/.ssh/id_rsa:/root/.ssh/id_rsa:ro \
           -v ./examples/uyuni/uyuni.yaml:/app/config.yaml:ro \
+          -e GEMINI_API_KEY=<my_gemini_api_key>
           --name failtale_service \
           ghcr.io/srbarrios/failtale # Replace it with failtale if you built it locally
         ```
@@ -118,6 +119,7 @@ This guide explains how to build and run the Docker container that includes the 
             * **Important:** Replace `~/.ssh/id_rsa` with the actual path to *your* private key file if it's different.
         * `--name failtale_service`: Assigns a convenient name to the running container.
         * `failtale`: Specifies the image to run.
+        * `-e <MY_LLM_PROVIDER_API_KEY>=<my_api_key>`: Add your API Key as environment variable, so the server can import it.
     * **Optional Mounts (Add more `-v` flags if needed):**
         * Known Hosts: `-v ~/.ssh/known_hosts:/root/.ssh/known_hosts:ro` (if your executor uses it).
         * Local Config: `-v ./config.yaml:/app/config.yaml:ro` (if you want to override the config cloned from git with a local version).
