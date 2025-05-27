@@ -148,33 +148,35 @@ This guide explains how to build and run the Docker container that includes the 
    6. **Option B) Use the AI Test Reviewer Ruby Class from your Test Framework:**
        * If you're using a Ruby test framework, you can initialize the ai_test_reviewer class to interact with the FailTale server:
        ```ruby
-           require 'ai_test_reviewer'
+         require_relative 'ai_test_reviewer'
 
-           reviewer = AiTestReviewer.new(
-             config_path: 'path/to/your/env_config.yaml',
-             server_url: 'http://localhost:5050'
-           )
+         reviewer = AiTestReviewer.new
 
          After do |scenario|
            if scenario.failed?
-              attach_ai_root_cause_hint(scenario)
+              Dir.mkdir('screenshots') unless File.directory?('screenshots')
+              path = "screenshots/#{scenario.name.tr(' ./', '_')}.png"
+              page.driver.browser.save_screenshot(path)
+              attach_ai_root_cause_hint(scenario, screenshot_path)
+           end
          end
 
-         def attach_ai_root_cause_hint(scenario)
+         def attach_ai_root_cause_hint(scenario, screenshot_path)
            file_path = scenario.location.file
            feature_text = File.read(file_path)
            collected_data = $ai_test_reviewer.collect(feature_text)
            if scenario.exception
-           error_message = scenario.exception.message
-           stacktrace = scenario.exception.backtrace.join("\n")
-           test_failure = "#{error_message}\n#{stacktrace}"
+             error_message = scenario.exception.message
+             stacktrace = scenario.exception.backtrace.join("\n")
+             test_failure = "#{error_message}\n#{stacktrace}"
            else
-           test_failure = 'No failure message available.'
+             test_failure = 'No failure message available.'
            end
-           result = $ai_test_reviewer.analyze(collected_data, page.html, feature_text, test_failure)
+           screenshot = Base64.encode64(File.read(screenshot_path)) if File.exist?(screenshot_path)
+           result = $ai_test_reviewer.analyze(collected_data, screenshot, feature_text, test_failure)
            root_cause_hint = result.fetch('root_cause_hint', nil)&.to_s
            return if root_cause_hint.nil? || root_cause_hint.empty?
-           
+         
            attach root_cause_hint, 'text/plain'
            $stdout.puts root_cause_hint
          end
