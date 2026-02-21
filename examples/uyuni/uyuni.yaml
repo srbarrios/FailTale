@@ -71,7 +71,7 @@ ollama:
 gemini:
   # api_key: "YOUR_GEMINI_KEY_DIRECTLY_HERE" # Direct key
   api_key_env_var: "GEMINI_API_KEY" # Custom Env Var
-  model: "gemini-2.0-flash"         # Model to use for analysis
+  model: "gemini-3-flash-preview"   # Model to use for analysis
   multimodal: true                  # Whether the model supports multimodal input
 
 openai:
