@@ -3,7 +3,7 @@
 > [!WARNING]
 > **Development has moved.**
 > The new approach is now being maintained in the new repository:
-> **[srbarrios/failtale-crewai](https://github.com/srbarrios/failtale-uyuni)**
+> **[srbarrios/failtale-uyuni](https://github.com/srbarrios/failtale-uyuni)**
 
 # FailTale: Tool to collect context from failed tests
 
